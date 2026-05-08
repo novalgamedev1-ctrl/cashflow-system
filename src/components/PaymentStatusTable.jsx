@@ -15,7 +15,7 @@ export default function PaymentStatusTable({ payments, isLoading }) {
   return (
     <div className="glass p-6 rounded-2xl">
       <h3 className="text-lg font-display font-bold text-white mb-6">
-        Payment Status - 2026
+        Status Pembayaran - 2026
       </h3>
 
       {isLoading ? (
@@ -54,11 +54,11 @@ export default function PaymentStatusTable({ payments, isLoading }) {
       <div className="flex gap-6 mt-8 pt-6 border-t border-accent/10">
         <div className="flex items-center gap-2">
           <Check size={18} className="text-green-500" />
-          <span className="text-sm text-white/70">Paid</span>
+          <span className="text-sm text-white/70">Sudah Bayar</span>
         </div>
         <div className="flex items-center gap-2">
           <X size={18} className="text-red-500" />
-          <span className="text-sm text-white/70">Unpaid</span>
+          <span className="text-sm text-white/70">Belum Bayar</span>
         </div>
       </div>
     </div>

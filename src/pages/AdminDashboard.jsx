@@ -311,9 +311,9 @@ export default function AdminDashboard() {
               {/* Total Class Cash - computed, read-only */}
               <StatCard
                 icon={Wallet}
-                title="Total Class Cash"
+                title="Total Kas Kelas"
                 value={`Rp ${totalClassCash.toLocaleString('id-ID')}`}
-                subtext="Income − Expenses (real-time)"
+                subtext="Pemasukan − Pengeluaran (real-time)"
                 accentClass="from-accent to-accent-light"
               />
 
@@ -366,7 +366,7 @@ export default function AdminDashboard() {
             {/* ── Recent activity ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass p-6 rounded-2xl">
-                <h3 className="text-lg font-display font-bold text-white mb-4">Recent Expenses</h3>
+                <h3 className="text-lg font-display font-bold text-white mb-4">Pengeluaran Terakhir</h3>
                 <div className="space-y-3 max-h-96 overflow-auto">
                   {expenses.slice(0, 5).map((expense) => (
                     <div key={expense.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
@@ -381,7 +381,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="glass p-6 rounded-2xl">
-                <h3 className="text-lg font-display font-bold text-white mb-4">Recent Income</h3>
+                <h3 className="text-lg font-display font-bold text-white mb-4">Pemasukan Terakhir</h3>
                 <div className="space-y-3 max-h-96 overflow-auto">
                   {incomes.slice(0, 5).map((income) => (
                     <div key={income.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">

@@ -105,7 +105,7 @@ export default function LoginPage() {
             {/* Student Selector */}
             <div>
               <label className="block text-sm font-medium text-white mb-3">
-                Select Student
+                Pilih Nama
               </label>
               <div className="relative">
                 <button
@@ -114,7 +114,7 @@ export default function LoginPage() {
                   className="w-full px-4 py-3 glass flex items-center justify-between text-left hover:bg-white/20 transition-colors"
                 >
                   <span className={selectedStudent ? 'text-white' : 'text-white/50'}>
-                    {selectedStudent ? selectedStudent.name : 'Choose a student...'}
+                    {selectedStudent ? selectedStudent.name : 'Pilih Nama Siswa...'}
                   </span>
                   <ChevronDown
                     size={20}
@@ -174,7 +174,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
+                  placeholder="Masukkan Kata Sandi"
                   className="w-full px-4 py-3 glass text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-accent/50"
                 />
                 <button
@@ -211,7 +211,7 @@ export default function LoginPage() {
 
           {/* Demo info */}
           <p className="text-center text-xs text-white/40 mt-6">
-            Demo: Select any student and enter password
+            Tip: Pilih nama anda lalu ketik kata sandi kemudian klik login
           </p>
         </div>
       </motion.div>

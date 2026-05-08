@@ -49,34 +49,84 @@ export default function StudentPaymentManager() {
     }
   }
 
-  const handleTogglePayment = async (studentId, currentStatus) => {
-    try {
-      const payment = payments[studentId]
-      
+const handleTogglePayment = async (
+  studentId,
+  studentName,
+  currentStatus
+) => {
+  try {
+    const payment = payments[studentId]
+
+    // =========================
+    // SET PAID
+    // =========================
+    if (!currentStatus) {
+      // Update/Create payment_status
       if (payment) {
-        // Update existing payment record
         await supabase
           .from('payment_status')
-          .update({ paid: !currentStatus })
-          .eq('id', payment.id)
-      } else {
-        // Create new payment record
-        await supabase
-          .from('payment_status')
-          .insert([{
-            student_id: studentId,
-            month: selectedMonth,
+          .update({
             paid: true,
             updated_at: new Date().toISOString(),
-          }])
+          })
+          .eq('id', payment.id)
+      } else {
+        await supabase
+          .from('payment_status')
+          .insert([
+            {
+              student_id: studentId,
+              month: selectedMonth,
+              year: new Date().getFullYear(),
+              paid: true,
+              updated_at: new Date().toISOString(),
+            },
+          ])
       }
 
-      fetchPaymentData()
-    } catch (err) {
-      console.error('Failed to update payment status:', err)
+      // Insert income otomatis
+      await supabase
+        .from('income')
+        .insert([
+          {
+            name: studentName,
+            amount: 10000,
+            source: 'Student Contributions',
+            description: '',
+            created_at: new Date().toISOString(),
+          },
+        ])
     }
-  }
 
+    // =========================
+    // SET UNPAID
+    // =========================
+    else {
+      // Update payment_status
+      if (payment) {
+        await supabase
+          .from('payment_status')
+          .update({
+            paid: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', payment.id)
+      }
+
+      // Hapus income terkait
+      await supabase
+        .from('income')
+        .delete()
+        .eq('name', studentName)
+        .eq('amount', 10000)
+        .eq('source', 'Student Contributions')
+    }
+
+    fetchPaymentData()
+  } catch (err) {
+    console.error('Failed to update payment status:', err)
+  }
+}
   return (
     <div className="glass p-6 rounded-2xl">
       <div className="flex items-center justify-between mb-6">
@@ -122,7 +172,9 @@ export default function StudentPaymentManager() {
                 </div>
 
                 <button
-                  onClick={() => handleTogglePayment(student.id, isPaid)}
+                  onClick={() =>
+  handleTogglePayment(student.id, student.name, isPaid)
+}
                   className={`p-3 rounded-lg transition-all ${
                     isPaid
                       ? 'bg-green-500/20 hover:bg-green-500/30 text-green-500'
@@ -152,11 +204,11 @@ export default function StudentPaymentManager() {
       <div className="flex gap-6 mt-8 pt-6 border-t border-accent/10">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-sm text-white/70">Paid</span>
+          <span className="text-sm text-white/70">Bayar</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500" />
-          <span className="text-sm text-white/70">Unpaid</span>
+          <span className="text-sm text-white/70">Belum Bayar</span>
         </div>
       </div>
     </div>

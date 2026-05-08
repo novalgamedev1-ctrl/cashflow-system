@@ -2,7 +2,7 @@
 
 ## 🎯 Project Overview
 
-**CashFlow System by Kazuto** is a modern, lightweight class cash management web application built for X TKJ A class. It provides a sleek interface for tracking financial transactions, managing student payments, and maintaining transparent class finances.
+**CashFlow System by Nopal** is a modern, lightweight class cash management web application built for X TKJ A class. It provides a sleek interface for tracking financial transactions, managing student payments, and maintaining transparent class finances.
 
 ### Key Statistics
 - **Framework**: React 18 + Vite
@@ -516,7 +516,7 @@ Total:      ~150KB (gzipped)
 
 ## 📄 License & Credits
 
-**CashFlow System by Kazuto**
+**CashFlow System by Nopal**
 Built for X TKJ A Class
 
 ### Technologies Used

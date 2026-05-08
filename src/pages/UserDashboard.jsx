@@ -18,6 +18,12 @@ const formatDate = (dateStr) => {
   })
 }
 
+const getProofUrl = (path) => {
+  if (!path) return ''
+
+  return `https://fxxjfkcjtuuxbrxhfrph.supabase.co/storage/v1/object/public/expense-proofs/${path}`
+}
+
 // ─── Income row ────────────────────────────────────────────────────────────────
 function IncomeRow({ income }) {
   return (
@@ -46,9 +52,12 @@ function IncomeRow({ income }) {
 }
 
 // ─── Expense row ───────────────────────────────────────────────────────────────
-function ExpenseRow({ expense }) {
+function ExpenseRow({ expense, onClick }) {
   return (
-    <div className="flex items-start justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors gap-3">
+    <button
+  onClick={() => onClick(expense)}
+  className="w-full flex items-start justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.01] gap-3 text-left"
+>
       <div className="flex items-center gap-3 min-w-0">
         <div className="p-2 bg-accent/10 rounded-lg shrink-0">
           <ArrowDownCircle size={18} className="text-accent" />
@@ -65,15 +74,13 @@ function ExpenseRow({ expense }) {
               </span>
             )}
             <span className="text-xs text-white/40">{formatDate(expense.created_at)}</span>
-            {expense.proof_url && (
+            {expense.proof_image_url && (
               <a
-                href={expense.proof_url}
+                href={expense.proof_image_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
               >
-                <ExternalLink size={11} />
-                Lihat bukti
               </a>
             )}
           </div>
@@ -82,7 +89,7 @@ function ExpenseRow({ expense }) {
       <p className="text-accent font-bold shrink-0 pt-1">
         -Rp {expense.amount.toLocaleString('id-ID')}
       </p>
-    </div>
+    </button>
   )
 }
 
@@ -100,6 +107,7 @@ export default function UserDashboard() {
   const [activeTab, setActiveTab]       = useState('overview')
   const [isLoading, setIsLoading]       = useState(true)
   const [studentName, setStudentName]   = useState('')
+  const [selectedExpense, setSelectedExpense] = useState(null)
 
   useEffect(() => { fetchDashboardData() }, [])
 
@@ -119,24 +127,51 @@ export default function UserDashboard() {
       setStudentName(studentName)
 
       // Step 2: fetch semua data secara paralel
-      const [
-        finRes,
-        transRes,
-        paymentRes,
-        unpaidRes,
-        incomeRes,
-        expenseRes,
-      ] = await Promise.all([
-        supabase.from('financial_summary').select('*').single(),
-        supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(10),
-        // Gunakan studentId hasil lookup, bukan user.id (auth UUID)
-        studentId
-          ? supabase.from('payment_status').select('*').eq('student_id', studentId).order('month', { ascending: true })
-          : Promise.resolve({ data: [] }),
-        supabase.from('payment_status').select('students(name, id)').eq('paid', false).eq('month', new Date().getMonth() + 1),
-        supabase.from('income').select('*').order('created_at', { ascending: false }),
-        supabase.from('expenses').select('*').order('created_at', { ascending: false }),
-      ])
+const [
+  finRes,
+  transRes,
+  paymentRes,
+  studentsRes,
+  monthlyPaymentsRes,
+  incomeRes,
+  expenseRes,
+] = await Promise.all([
+  supabase.from('financial_summary').select('*').single(),
+
+  supabase
+    .from('transactions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10),
+
+  studentId
+    ? supabase
+        .from('payment_status')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('month', { ascending: true })
+    : Promise.resolve({ data: [] }),
+
+  supabase
+    .from('students')
+    .select('id, name'),
+
+  supabase
+    .from('payment_status')
+    .select('student_id, paid')
+    .eq('month', new Date().getMonth() + 1)
+    .eq('year', new Date().getFullYear()),
+
+  supabase
+    .from('income')
+    .select('*')
+    .order('created_at', { ascending: false }),
+
+  supabase
+    .from('expenses')
+    .select('*')
+    .order('created_at', { ascending: false }),
+])
 
       const fetchedIncomes  = incomeRes.data  || []
       const fetchedExpenses = expenseRes.data || []
@@ -151,7 +186,22 @@ export default function UserDashboard() {
       })
       setTransactions(transRes.data    || [])
       setPaymentStatus(paymentRes.data || [])
-      setUnpaidStudents(unpaidRes.data || [])
+      const allStudents = studentsRes.data || []
+const monthlyPayments = monthlyPaymentsRes.data || []
+
+const unpaid = allStudents.filter((student) => {
+  const payment = monthlyPayments.find(
+    (p) => p.student_id === student.id
+  )
+
+  // tidak ada row
+  if (!payment) return true
+
+  // ada row tapi false
+  return payment.paid === false
+})
+
+setUnpaidStudents(unpaid)
       setIncomes(fetchedIncomes)
       setExpenses(fetchedExpenses)
     } catch (err) {
@@ -243,27 +293,27 @@ export default function UserDashboard() {
               <motion.div variants={itemVariants}>
                 <DashboardCard
                   icon={Wallet}
-                  title="Total Class Cash"
+                  title="Total Kas Kelas"
                   value={`Rp ${stats.totalCash.toLocaleString('id-ID')}`}
-                  subtext="Available funds"
+                  subtext="Kas Akumulasi"
                   accentColor="from-accent to-accent-light"
                 />
               </motion.div>
               <motion.div variants={itemVariants}>
                 <DashboardCard
                   icon={TrendingUp}
-                  title="Mini Bank"
+                  title="Bank Mini"
                   value={`Rp ${stats.miniBank.toLocaleString('id-ID')}`}
-                  subtext="Savings account"
+                  subtext="Uang yang berada di bank mini"
                   accentColor="from-green-500 to-emerald-500"
                 />
               </motion.div>
               <motion.div variants={itemVariants}>
                 <DashboardCard
                   icon={TrendingDown}
-                  title="Treasurer"
+                  title="Bendahara"
                   value={`Rp ${stats.treasurer.toLocaleString('id-ID')}`}
-                  subtext="With treasurer"
+                  subtext="Uang di bendahara"
                   accentColor="from-blue-500 to-cyan-500"
                 />
               </motion.div>
@@ -278,7 +328,7 @@ export default function UserDashboard() {
               {/* Unpaid students */}
               <motion.div variants={itemVariants}>
                 <div className="glass p-6 rounded-2xl">
-                  <h3 className="text-lg font-display font-bold text-white mb-4">Unpaid This Month</h3>
+                  <h3 className="text-lg font-display font-bold text-white mb-4">Yang belum bayar bulan ini</h3>
                   <div className="space-y-3 max-h-96 overflow-auto">
                     {unpaidStudents.length > 0 ? (
                       unpaidStudents.map((item, idx) => (
@@ -286,14 +336,14 @@ export default function UserDashboard() {
                           key={idx}
                           className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                         >
-                          <span className="text-white text-sm">{item.students?.name}</span>
+                          <span className="text-white text-sm">{item.name}</span>
                           <span className="px-2.5 py-1 bg-red-500/20 border border-red-500/50 text-red-200 text-xs rounded-full">
                             ❌ Unpaid
                           </span>
                         </div>
                       ))
                     ) : (
-                      <p className="text-white/50 text-sm text-center py-6">All paid! ✅</p>
+                      <p className="text-white/50 text-sm text-center py-6">Semua Sudah bayar! ✅</p>
                     )}
                   </div>
                 </div>
@@ -370,7 +420,13 @@ export default function UserDashboard() {
                     <div key={i} className="h-16 rounded-lg bg-white/5 animate-pulse" />
                   ))
                 ) : expenses.length > 0 ? (
-                  expenses.map((expense) => <ExpenseRow key={expense.id} expense={expense} />)
+                  expenses.map((expense) => (
+  <ExpenseRow
+    key={expense.id}
+    expense={expense}
+    onClick={setSelectedExpense}
+  />
+))
                 ) : (
                   <p className="text-white/40 text-sm text-center py-10">Belum ada data pengeluaran.</p>
                 )}
@@ -386,6 +442,115 @@ export default function UserDashboard() {
           </motion.div>
         )}
       </motion.div>
+
+      {selectedExpense && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="w-full max-w-lg glass rounded-2xl border border-white/10 overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-5 border-b border-white/10">
+        <div>
+          <h2 className="text-xl font-bold text-white">
+            Detail Pengeluaran
+          </h2>
+          <p className="text-sm text-white/40 mt-1">
+            Lihat bukti bayar dan detail transaksi
+          </p>
+        </div>
+
+        <button
+          onClick={() => setSelectedExpense(null)}
+          className="w-9 h-9 rounded-full bg-white/5 hover:bg-red-500/20 border border-white/10 flex items-center justify-center text-white transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+        {/* Image */}
+        {selectedExpense.proof_image_url && (
+          <div className="rounded-xl overflow-hidden border border-white/10">
+            <img
+              src={getProofUrl(selectedExpense.proof_image_url)}
+              alt="Bukti pembayaran"
+              className="w-full h-64 object-cover"
+            />
+          </div>
+        )}
+
+        {/* Info */}
+        <div className="space-y-4">
+          <div>
+            <p className="text-white/40 text-sm">Nama Pengeluaran</p>
+            <p className="text-white font-semibold text-lg">
+              {selectedExpense.name}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-white/40 text-sm">Jumlah Pengeluaran</p>
+            <p className="text-accent font-bold text-2xl">
+              -Rp {selectedExpense.amount.toLocaleString('id-ID')}
+            </p>
+          </div>
+
+          {selectedExpense.category && (
+            <div>
+              <p className="text-white/40 text-sm">Kategori</p>
+              <span className="inline-block mt-1 px-3 py-1 bg-accent/10 border border-accent/20 text-accent rounded-full text-sm">
+                {selectedExpense.category}
+              </span>
+            </div>
+          )}
+
+          {selectedExpense.description && (
+            <div>
+              <p className="text-white/40 text-sm">Deskripsi</p>
+              <p className="text-white/80 leading-relaxed">
+                {selectedExpense.description}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <p className="text-white/40 text-sm">Tanggal</p>
+            <p className="text-white">
+              {formatDate(selectedExpense.created_at)}
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+{/* Footer */}
+<div className="pt-2">
+  {selectedExpense.proof_image_url ? (
+    <a
+      href={getProofUrl(selectedExpense.proof_image_url)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 transition-all duration-200 text-black font-bold shadow-lg shadow-orange-500/20"
+    >
+      <ExternalLink size={18} />
+      Lihat Bukti Bayar
+    </a>
+  ) : (
+    <button
+      disabled
+      className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-white/40 cursor-not-allowed"
+    >
+      Tidak Ada Bukti Pembayaran
+    </button>
+  )}
+</div>
+      </div>
+    </motion.div>
+  </div>
+)}
     </div>
   )
 }

@@ -53,7 +53,7 @@ export default function LandingPage() {
           </div>
           <h1 className="text-5xl md:text-7xl font-display font-bold mb-4">
             <span className="text-gradient">CashFlow</span>
-            <span className="block text-white mt-2">System by Kazuto</span>
+            <span className="block text-white mt-2">System by Nopal</span>
           </h1>
         </motion.div>
 

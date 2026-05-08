@@ -53,7 +53,7 @@ export default function LoadingScreen() {
             System Loading
           </h1>
           <p className="text-sm md:text-base text-white/60 font-light">
-            CashFlow TKJ A by Kazuto
+            CashFlow TKJ A by Nopal
           </p>
         </motion.div>
 
