@@ -10,7 +10,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          supabase: ['supabase'],
+          supabase: ['@supabase/supabase-js'],
           motion: ['framer-motion'],
         },
       },
