@@ -1,0 +1,220 @@
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { Eye, EyeOff, ChevronDown } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../store/authStore'
+
+export default function LoginPage() {
+  const navigate = useNavigate()
+  const { login } = useAuthStore()
+  const [students, setStudents] = useState([])
+  const [selectedStudent, setSelectedStudent] = useState(null)
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchStudents()
+  }, [])
+
+  const fetchStudents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('name', { ascending: true })
+
+      if (error) throw error
+      setStudents(data || [])
+    } catch (err) {
+      console.error('Failed to fetch students:', err)
+      setError('Failed to load students')
+    }
+  }
+
+  const filteredStudents = students.filter(student =>
+    student.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setError('')
+
+    if (!selectedStudent || !password) {
+      setError('Please select a student and enter password')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('student_id', selectedStudent.id)
+        .eq('password', password) // Note: In production, use proper password hashing
+        .single()
+
+      if (error) throw new Error('Invalid credentials')
+
+      // Generate token
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+      
+      login(data, token, data.role || 'user')
+      navigate(`/dashboard?token=${token}`)
+    } catch (err) {
+      setError('Invalid email or password')
+      console.error('Login error:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-dark-primary via-dark-secondary to-dark-tertiary flex items-center justify-center px-4 py-8">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-accent rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="glass p-8 md:p-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 mb-4 glass">
+              <div className="text-xl font-display font-bold text-accent">₭</div>
+            </div>
+            <h1 className="text-3xl font-display font-bold text-white mb-2">
+              CashFlow Login
+            </h1>
+            <p className="text-sm text-white/60">
+              X TKJ A Management System
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* Student Selector */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-3">
+                Select Student
+              </label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="w-full px-4 py-3 glass flex items-center justify-between text-left hover:bg-white/20 transition-colors"
+                >
+                  <span className={selectedStudent ? 'text-white' : 'text-white/50'}>
+                    {selectedStudent ? selectedStudent.name : 'Choose a student...'}
+                  </span>
+                  <ChevronDown
+                    size={20}
+                    className={`text-accent transition-transform ${showDropdown ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {/* Dropdown */}
+                {showDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute top-full left-0 right-0 mt-2 glass z-20 max-h-48 overflow-auto"
+                  >
+                    {/* Search input */}
+                    <input
+                      type="text"
+                      placeholder="Search students..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-4 py-2 bg-transparent border-b border-accent/20 text-white placeholder-white/30 focus:outline-none focus:border-accent/50"
+                    />
+
+                    {/* Student list */}
+                    <div className="p-2">
+                      {filteredStudents.length > 0 ? (
+                        filteredStudents.map((student) => (
+                          <button
+                            key={student.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedStudent(student)
+                              setShowDropdown(false)
+                              setSearchQuery('')
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-white hover:bg-accent/20 rounded-lg transition-colors"
+                          >
+                            {student.name}
+                          </button>
+                        ))
+                      ) : (
+                        <p className="px-4 py-2 text-white/50 text-sm">No students found</p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-3">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full px-4 py-3 glass text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-accent transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="px-4 py-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {/* Submit button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-to-r from-accent to-accent-light text-dark-primary font-display font-bold rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
+            </motion.button>
+          </form>
+
+          {/* Demo info */}
+          <p className="text-center text-xs text-white/40 mt-6">
+            Demo: Select any student and enter password
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  )
+}

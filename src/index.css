@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply scroll-smooth;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-dark-primary text-white font-body;
+  background: linear-gradient(135deg, #0F1419 0%, #1A1F2E 100%);
+}
+
+/* Glass morphism effect */
+.glass {
+  @apply bg-opacity-10 bg-white/10 backdrop-blur-md border border-glass-border rounded-2xl;
+}
+
+.glass-sm {
+  @apply bg-opacity-10 bg-white/10 backdrop-blur-sm border border-glass-border rounded-xl;
+}
+
+/* Loading animation */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  @apply transition-all duration-300 ease-out;
+}
+
+/* Text gradients */
+.text-gradient {
+  @apply bg-gradient-to-r from-accent via-accent-light to-accent bg-clip-text text-transparent;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-accent rounded-lg hover:bg-accent-light;
+}
+
+/* Mobile optimization */
+@media (max-width: 640px) {
+  body {
+    @apply text-base;
+  }
+  
+  .glass {
+    @apply rounded-xl;
+  }
+}
+
+/* Focus states for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-dark-primary;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse bg-dark-tertiary rounded-lg;
+}
