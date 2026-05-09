@@ -47,17 +47,33 @@ function NotificationCard({ studentId }) {
   }, [])
 
   useEffect(() => { syncStatus() }, [syncStatus])
+const isPWA = window.matchMedia('(display-mode: standalone)').matches
+const handleEnable = async () => {
+  if (!studentId) return
 
-  const handleEnable = async () => {
-    if (!studentId) return
-    setStatus('loading')
-    try {
-      await subscribeToPush(studentId)
-      setStatus('granted')
-    } catch {
+  // kalau denied, buka pengaturan browser
+  if (Notification.permission === 'denied') {
+    alert(
+      'Notifikasi diblokir.\n\nBuka pengaturan browser lalu izinkan notifikasi untuk website ini.'
+    )
+    return
+  }
+
+  setStatus('loading')
+
+  try {
+    await subscribeToPush(studentId)
+    setStatus('granted')
+  } catch (err) {
+    console.error(err)
+
+    if (Notification.permission === 'denied') {
       setStatus('denied')
+    } else {
+      setStatus('default')
     }
   }
+}
 
   // ── Derived UI values ──────────────────────────────────────────────────────
   const isGranted     = status === 'granted'
