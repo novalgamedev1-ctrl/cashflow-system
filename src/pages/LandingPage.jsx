@@ -32,7 +32,7 @@ export default function LandingPage() {
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage: 'url(https://media.discordapp.net/attachments/1208321641831202866/1502656683552542871/IMG-20260421-WA0021.jpg?ex=6a008197&is=69ff3017&hm=b0590aea283645805541fe04cc20b92178c23c51d51be476d9799ba7b0c10f34&=&format=webp&width=721&height=960)',
-          filter: 'brightness(1) blur(2px)',
+          filter: 'brightness(0.8) blur(1.5px)',
         }}
       />
 
@@ -49,7 +49,7 @@ export default function LandingPage() {
         {/* Logo/Header */}
         <motion.div variants={itemVariants} className="mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 mb-6 glass">
-            <div className="text-2xl font-display font-bold text-accent">₭</div>
+            <div className="text-2xl font-display font-bold text-accent">TKJ</div>
           </div>
           <h1 className="text-5xl md:text-7xl font-display font-bold mb-4">
             <span className="text-gradient">CashFlow</span>
@@ -62,7 +62,7 @@ export default function LandingPage() {
           variants={itemVariants}
           className="text-lg md:text-xl text-white/70 max-w-2xl mb-12 font-light"
         >
-          Sistem kas kelas yang dibuat untuk TKJ A Angkatan 29. Di kembangkan oleh Noval Hadi Purnomo
+          Sistem kas kelas yang dibuat untuk TKJ A Angkatan 29. Dikembangkan oleh Noval Hadi Purnomo
         </motion.p>
 
         {/* CTA Button */}

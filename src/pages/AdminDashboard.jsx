@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Plus, MoreVertical, Pencil, X, Check, Wallet, TrendingUp, TrendingDown, Receipt, Tag, Trash2, FileText, Image as ImageIcon, Save } from 'lucide-react'
+import { LogOut, Plus, MoreVertical, Pencil, X, Check, Wallet, TrendingUp, TrendingDown, Receipt, Tag, FileText, Image as ImageIcon, Save, Bell, Send, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { supabase } from '../lib/supabase'
+import { sendPushToAll } from '../lib/pushNotifications'
 import ExpenseForm from '../components/ExpenseForm'
 import IncomeForm from '../components/IncomeForm'
 import StudentPaymentManager from '../components/StudentPaymentManager'
@@ -13,33 +14,6 @@ const calcTotalCash = (incomes = [], expenses = []) => {
   const totalIncome  = incomes.reduce((sum, r) => sum + (r.amount ?? 0), 0)
   const totalExpense = expenses.reduce((sum, r) => sum + (r.amount ?? 0), 0)
   return totalIncome - totalExpense
-}
-
-const formatExpenseDate = (dateStr) => {
-  if (!dateStr) return '-'
-
-  const date = new Date(dateStr)
-
-  const tanggal = date.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-
-  const hari = date.toLocaleDateString('id-ID', {
-    weekday: 'long',
-  })
-
-  const jam = date.toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
-  return {
-    tanggal,
-    hari,
-    jam,
-  }
 }
 
 // ─── Expense Detail Modal ──────────────────────────────────────────────────────
@@ -110,7 +84,7 @@ function ExpenseDetailModal({ expense, onClose, onUpdate }) {
                   <p className="text-xs text-white/40">
                     {expense.created_at
                       ? new Date(expense.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                      : '—'}
+                      : '-'}
                   </p>
                 </div>
               </div>
@@ -179,7 +153,7 @@ function ExpenseDetailModal({ expense, onClose, onUpdate }) {
                   className="w-full bg-white/10 border border-accent/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent transition-colors"
                 />
               ) : (
-                <p className="text-white font-semibold text-base">{expense.name || '—'}</p>
+                <p className="text-white font-semibold text-base">{expense.name || '-'}</p>
               )}
             </div>
 
@@ -283,6 +257,139 @@ function ExpenseDetailModal({ expense, onClose, onUpdate }) {
               className="px-5 py-2 glass hover:bg-white/10 rounded-lg text-sm text-white/70 font-medium transition-colors"
             >
               Tutup
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+// ─── Send Notification Modal ───────────────────────────────────────────────────
+function SendNotificationModal({ onClose }) {
+  const [title, setTitle]   = useState('')
+  const [body, setBody]     = useState('')
+  const [status, setStatus] = useState('idle') // 'idle' | 'sending' | 'success' | 'error'
+  const [errMsg, setErrMsg] = useState('')
+
+  const handleSend = async () => {
+    if (!title.trim() || !body.trim()) return
+    setStatus('sending')
+    try {
+      await sendPushToAll({ title: title.trim(), body: body.trim() })
+      setStatus('success')
+      setTimeout(() => onClose(), 1500)
+    } catch (err) {
+      setErrMsg(err?.message || 'Gagal mengirim notifikasi')
+      setStatus('error')
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="notif-backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      />
+      <motion.div
+        key="notif-modal"
+        initial={{ opacity: 0, scale: 0.92, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 24 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      >
+        <div
+          className="pointer-events-auto w-full max-w-md glass rounded-2xl overflow-hidden shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="relative px-6 pt-6 pb-4 border-b border-white/10">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 to-purple-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-violet-500/20">
+                  <Bell size={20} className="text-violet-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-display font-bold text-white">Kirim Notifikasi</h2>
+                  <p className="text-xs text-white/40">Ke semua student yang sudah izinkan notifikasi</p>
+                </div>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+              >
+                <X size={18} className="text-white/60 hover:text-red-400" />
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-5 space-y-4">
+            {/* Judul */}
+            <div>
+              <label className="text-xs text-white/40 mb-1.5 block">Judul Notifikasi</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Contoh: Pengingat Iuran Bulan Ini"
+                maxLength={80}
+                disabled={status === 'sending' || status === 'success'}
+                className="w-full bg-white/10 border border-white/15 focus:border-violet-400/60 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-white/25 focus:outline-none transition-colors disabled:opacity-50"
+              />
+            </div>
+
+            {/* Deskripsi */}
+            <div>
+              <label className="text-xs text-white/40 mb-1.5 block">Deskripsi</label>
+              <textarea
+                rows={4}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Contoh: Harap segera lakukan pembayaran sebelum tanggal 15."
+                maxLength={200}
+                disabled={status === 'sending' || status === 'success'}
+                className="w-full bg-white/10 border border-white/15 focus:border-violet-400/60 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-white/25 focus:outline-none transition-colors resize-none disabled:opacity-50"
+              />
+              <p className="text-right text-xs text-white/25 mt-1">{body.length}/200</p>
+            </div>
+
+            {/* Error */}
+            {status === 'error' && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2"
+              >
+                ⚠ {errMsg}
+              </motion.p>
+            )}
+
+            {/* Send button */}
+            <motion.button
+              whileHover={{ scale: status === 'idle' ? 1.02 : 1 }}
+              whileTap={{ scale: status === 'idle' ? 0.98 : 1 }}
+              onClick={handleSend}
+              disabled={!title.trim() || !body.trim() || status === 'sending' || status === 'success'}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                ${status === 'success'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400 text-white shadow-lg shadow-violet-500/25'}`}
+            >
+              {status === 'sending' ? (
+                <><Loader2 size={16} className="animate-spin" /> Mengirim...</>
+              ) : status === 'success' ? (
+                <>✓ Berhasil Dikirim!</>
+              ) : (
+                <><Send size={16} /> Kirim Notifikasi</>
+              )}
             </motion.button>
           </div>
         </div>
@@ -414,6 +521,7 @@ export default function AdminDashboard() {
   const [summaryId, setSummaryId]             = useState(null)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [showIncomeForm, setShowIncomeForm]   = useState(false)
+  const [showNotifForm, setShowNotifForm]     = useState(false)
   const [activeTab, setActiveTab]             = useState('overview')
   const [isLoading, setIsLoading]             = useState(true)
 
@@ -557,15 +665,27 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-display font-bold text-white">Admin Panel</h1>
             <p className="text-sm text-white/60">{user?.name || 'Admin'}</p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 glass hover:bg-red-500/20 transition-colors rounded-lg"
-          >
-            <LogOut size={18} className="text-accent" />
-            <span className="text-sm font-medium">Logout</span>
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowNotifForm(true)}
+              className="flex items-center gap-2 px-4 py-2 glass hover:bg-violet-500/20 transition-colors rounded-lg"
+              title="Kirim Notifikasi"
+            >
+              <Bell size={18} className="text-violet-400" />
+              <span className="text-sm font-medium text-white/80 hidden sm:inline">Notifikasi</span>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 glass hover:bg-red-500/20 transition-colors rounded-lg"
+            >
+              <LogOut size={18} className="text-accent" />
+              <span className="text-sm font-medium">Logout</span>
+            </motion.button>
+          </div>
         </div>
       </motion.div>
 
@@ -727,12 +847,12 @@ export default function AdminDashboard() {
                       className="p-2 hover:bg-red-500/20 rounded-lg transition-colors shrink-0"
                       title="Hapus expense"
                     >
-                      <Trash2 size={18} className="text-white/60" />
+                      <MoreVertical size={18} className="text-white/60" />
                     </button>
                   </motion.div>
                 ))}
                 {expenses.length === 0 && (
-                  <p className="text-white/40 text-sm text-center py-8">Tidak ada pengeluaran</p>
+                  <p className="text-white/40 text-sm text-center py-8">No expenses recorded yet.</p>
                 )}
               </div>
             </div>
@@ -777,12 +897,12 @@ export default function AdminDashboard() {
                       onClick={() => handleDeleteIncome(income.id)}
                       className="p-2 hover:bg-red-500/20 rounded-lg transition-colors shrink-0"
                     >
-                      <Trash2 size={18} className="text-white/60" />
+                      <MoreVertical size={18} className="text-white/60" />
                     </button>
                   </div>
                 ))}
                 {incomes.length === 0 && (
-                  <p className="text-white/40 text-sm text-center py-8">Tidak ada pemasukan</p>
+                  <p className="text-white/40 text-sm text-center py-8">No income recorded yet.</p>
                 )}
               </div>
             </div>
@@ -807,6 +927,13 @@ export default function AdminDashboard() {
           <IncomeForm
             onClose={() => setShowIncomeForm(false)}
             onSubmit={handleAddIncome}
+          />
+        )}
+
+        {/* ── SEND NOTIFICATION MODAL ── */}
+        {showNotifForm && (
+          <SendNotificationModal
+            onClose={() => setShowNotifForm(false)}
           />
         )}
 

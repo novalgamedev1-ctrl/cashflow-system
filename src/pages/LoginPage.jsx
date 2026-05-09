@@ -91,7 +91,7 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 mb-4 glass">
-              <div className="text-xl font-display font-bold text-accent">₭</div>
+              <div className="text-xl font-display font-bold text-accent">TKJ</div>
             </div>
             <h1 className="text-3xl font-display font-bold text-white mb-2">
               CashFlow Login
