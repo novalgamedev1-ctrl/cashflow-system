@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Plus, MoreVertical, Pencil, X, Check, Wallet, TrendingUp, TrendingDown } from 'lucide-react'
+import { LogOut, Plus, MoreVertical, Pencil, X, Check, Wallet, TrendingUp, TrendingDown, Receipt, Tag, Trash2, FileText, Image as ImageIcon, Save } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { supabase } from '../lib/supabase'
@@ -15,6 +15,282 @@ const calcTotalCash = (incomes = [], expenses = []) => {
   return totalIncome - totalExpense
 }
 
+const formatExpenseDate = (dateStr) => {
+  if (!dateStr) return '-'
+
+  const date = new Date(dateStr)
+
+  const tanggal = date.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+
+  const hari = date.toLocaleDateString('id-ID', {
+    weekday: 'long',
+  })
+
+  const jam = date.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return {
+    tanggal,
+    hari,
+    jam,
+  }
+}
+
+// ─── Expense Detail Modal ──────────────────────────────────────────────────────
+function ExpenseDetailModal({ expense, onClose, onUpdate }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [draft, setDraft] = useState({
+    name: expense.name || '',
+    description: expense.description || '',
+    category: expense.category || '',
+    amount: expense.amount ?? 0,
+  })
+
+  const handleSave = async () => {
+    const num = parseFloat(String(draft.amount).replace(/[^0-9.-]/g, ''))
+    if (isNaN(num)) return
+    setSaving(true)
+    await onUpdate(expense.id, { ...draft, amount: num })
+    setSaving(false)
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setDraft({
+      name: expense.name || '',
+      description: expense.description || '',
+      category: expense.category || '',
+      amount: expense.amount ?? 0,
+    })
+    setIsEditing(false)
+  }
+
+  return (
+    <AnimatePresence>
+      {/* Backdrop */}
+      <motion.div
+        key="backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      />
+
+      {/* Modal */}
+      <motion.div
+        key="modal"
+        initial={{ opacity: 0, scale: 0.92, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 24 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      >
+        <div
+          className="pointer-events-auto w-full max-w-lg glass rounded-2xl overflow-hidden shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="relative px-6 pt-6 pb-4 border-b border-white/10">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent to-accent-light" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-accent/20">
+                  <Receipt size={20} className="text-accent" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-display font-bold text-white">Detail Pengeluaran</h2>
+                  <p className="text-xs text-white/40">
+                    {expense.created_at
+                      ? new Date(expense.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Edit / Save / Cancel */}
+                {isEditing ? (
+                  <>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleCancel}
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                      title="Batal"
+                    >
+                      <X size={16} className="text-white/50" />
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-dark-primary rounded-lg text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      <Save size={14} />
+                      {saving ? 'Menyimpan...' : 'Simpan'}
+                    </motion.button>
+                  </>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 glass hover:bg-white/10 rounded-lg text-sm font-medium transition-colors"
+                    title="Edit expense"
+                  >
+                    <Pencil size={14} className="text-accent" />
+                    <span className="text-white/80">Edit</span>
+                  </motion.button>
+                )}
+
+                {/* Close */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={onClose}
+                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                >
+                  <X size={18} className="text-white/60 hover:text-red-400" />
+                </motion.button>
+              </div>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+
+            {/* Nama */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-white/40 mb-1.5">
+                <FileText size={12} /> Nama Pengeluaran
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={draft.name}
+                  onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
+                  className="w-full bg-white/10 border border-accent/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent transition-colors"
+                />
+              ) : (
+                <p className="text-white font-semibold text-base">{expense.name || '—'}</p>
+              )}
+            </div>
+
+            {/* Kategori */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-white/40 mb-1.5">
+                <Tag size={12} /> Kategori
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={draft.category}
+                  onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value }))}
+                  className="w-full bg-white/10 border border-accent/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent transition-colors"
+                />
+              ) : (
+                expense.category
+                  ? <span className="inline-block px-2.5 py-1 bg-accent/10 border border-accent/20 text-accent text-xs rounded-full font-medium">{expense.category}</span>
+                  : <p className="text-white/40 text-sm">Tidak ada kategori</p>
+              )}
+            </div>
+
+            {/* Jumlah */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-white/40 mb-1.5">
+                <Wallet size={12} /> Jumlah
+              </label>
+              {isEditing ? (
+                <input
+                  type="number"
+                  value={draft.amount}
+                  onChange={(e) => setDraft((p) => ({ ...p, amount: e.target.value }))}
+                  className="w-full bg-white/10 border border-accent/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent transition-colors"
+                />
+              ) : (
+                <p className="text-2xl font-display font-bold text-accent">
+                  −Rp {Number(expense.amount).toLocaleString('id-ID')}
+                </p>
+              )}
+            </div>
+
+            {/* Deskripsi */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-white/40 mb-1.5">
+                <FileText size={12} /> Deskripsi
+              </label>
+              {isEditing ? (
+                <textarea
+                  rows={3}
+                  value={draft.description}
+                  onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
+                  className="w-full bg-white/10 border border-accent/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent transition-colors resize-none"
+                />
+              ) : (
+                <p className="text-white/70 text-sm leading-relaxed">
+                  {expense.description || <span className="text-white/30 italic">Tidak ada deskripsi</span>}
+                </p>
+              )}
+            </div>
+
+            {/* Bukti Pembayaran */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-white/40 mb-2">
+                <ImageIcon size={12} /> Bukti Pembayaran
+              </label>
+              {expense.proof_image_url ? (
+                <div className="rounded-xl overflow-hidden border border-white/10">
+                  <img
+                    src={`https://fxxjfkcjtuuxbrxhfrph.supabase.co/storage/v1/object/public/expense-proofs/${expense.proof_image_url}`}
+                    alt="Bukti pembayaran"
+                    className="w-full object-contain max-h-72 bg-black/20"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      e.currentTarget.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                  <div
+                    style={{ display: 'none' }}
+                    className="flex-col items-center justify-center py-8 text-white/30"
+                  >
+                    <ImageIcon size={28} className="mb-2 opacity-40" />
+                    <p className="text-sm">Gagal memuat gambar</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 rounded-xl border border-dashed border-white/15 text-white/30">
+                  <ImageIcon size={28} className="mb-2 opacity-40" />
+                  <p className="text-sm">Tidak ada bukti pembayaran</p>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-white/10 flex justify-end">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onClose}
+              className="px-5 py-2 glass hover:bg-white/10 rounded-lg text-sm text-white/70 font-medium transition-colors"
+            >
+              Tutup
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 // ─── Inline edit card ──────────────────────────────────────────────────────────
 function EditableCard({ icon: Icon, title, value, subtext, accentClass, onSave }) {
   const [editing, setEditing]   = useState(false)
@@ -22,7 +298,6 @@ function EditableCard({ icon: Icon, title, value, subtext, accentClass, onSave }
   const [saving, setSaving]     = useState(false)
 
   const startEdit = () => {
-    // strip non-numeric chars coming from formatted display value
     setDraft(String(value))
     setEditing(true)
   }
@@ -40,7 +315,6 @@ function EditableCard({ icon: Icon, title, value, subtext, accentClass, onSave }
 
   return (
     <div className="glass p-6 rounded-2xl relative overflow-hidden">
-      {/* accent bar */}
       <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${accentClass}`} />
 
       <div className="flex items-start justify-between mb-3">
@@ -137,11 +411,14 @@ export default function AdminDashboard() {
   const [expenses, setExpenses]               = useState([])
   const [incomes, setIncomes]                 = useState([])
   const [financialSummary, setFinancialSummary] = useState({ mini_bank: 0, treasurer: 0 })
-  const [summaryId, setSummaryId]             = useState(null)   // id of the financial_summary row
+  const [summaryId, setSummaryId]             = useState(null)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [showIncomeForm, setShowIncomeForm]   = useState(false)
   const [activeTab, setActiveTab]             = useState('overview')
   const [isLoading, setIsLoading]             = useState(true)
+
+  // ── NEW: selected expense for detail modal ──────────────────────────────────
+  const [selectedExpense, setSelectedExpense] = useState(null)
 
   useEffect(() => { fetchAdminData() }, [])
 
@@ -186,7 +463,6 @@ export default function AdminDashboard() {
           .eq('id', summaryId)
         if (error) throw error
       } else {
-        // No row yet - insert one
         const { data, error } = await supabase
           .from('financial_summary')
           .insert([{ [field]: value }])
@@ -198,6 +474,25 @@ export default function AdminDashboard() {
       setFinancialSummary((prev) => ({ ...prev, [field]: value }))
     } catch (err) {
       console.error(`Failed to update ${field}:`, err)
+    }
+  }
+
+  // ── NEW: Update expense ────────────────────────────────────────────────────
+  const handleUpdateExpense = async (id, updatedData) => {
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update(updatedData)
+        .eq('id', id)
+      if (error) throw error
+      // Update local state optimistically
+      setExpenses((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, ...updatedData } : e))
+      )
+      // Also update selectedExpense so modal reflects new data
+      setSelectedExpense((prev) => (prev?.id === id ? { ...prev, ...updatedData } : prev))
+    } catch (err) {
+      console.error('Failed to update expense:', err)
     }
   }
 
@@ -305,10 +600,7 @@ export default function AdminDashboard() {
         {/* ── OVERVIEW TAB ── */}
         {activeTab === 'overview' && (
           <motion.div variants={itemVariants} className="space-y-6">
-
-            {/* ── Financial summary cards ── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Total Class Cash - computed, read-only */}
               <StatCard
                 icon={Wallet}
                 title="Total Kas Kelas"
@@ -316,8 +608,6 @@ export default function AdminDashboard() {
                 subtext="Pemasukan − Pengeluaran (real-time)"
                 accentClass="from-accent to-accent-light"
               />
-
-              {/* Mini Bank - editable */}
               <EditableCard
                 icon={TrendingUp}
                 title="Mini Bank"
@@ -326,8 +616,6 @@ export default function AdminDashboard() {
                 accentClass="from-green-500 to-emerald-500"
                 onSave={(val) => updateSummaryField('mini_bank', val)}
               />
-
-              {/* Treasurer (Bendahara) - editable */}
               <EditableCard
                 icon={TrendingDown}
                 title="Bendahara"
@@ -338,7 +626,6 @@ export default function AdminDashboard() {
               />
             </div>
 
-            {/* ── Quick action buttons ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -363,7 +650,6 @@ export default function AdminDashboard() {
               </motion.button>
             </div>
 
-            {/* ── Recent activity ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass p-6 rounded-2xl">
                 <h3 className="text-lg font-display font-bold text-white mb-4">Pengeluaran Terakhir</h3>
@@ -416,9 +702,12 @@ export default function AdminDashboard() {
 
               <div className="space-y-3 max-h-[600px] overflow-auto">
                 {expenses.map((expense) => (
-                  <div
+                  <motion.div
                     key={expense.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    whileHover={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+                    // ── clicking the row opens the detail modal ──
+                    onClick={() => setSelectedExpense(expense)}
+                    className="flex items-center justify-between p-4 rounded-lg bg-white/5 transition-colors cursor-pointer"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-medium truncate">{expense.name}</p>
@@ -432,16 +721,18 @@ export default function AdminDashboard() {
                     <p className="text-accent font-bold mx-4 shrink-0">
                       -Rp {expense.amount.toLocaleString('id-ID')}
                     </p>
+                    {/* Delete button - stop propagation so it doesn't open modal */}
                     <button
-                      onClick={() => handleDeleteExpense(expense.id)}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteExpense(expense.id) }}
                       className="p-2 hover:bg-red-500/20 rounded-lg transition-colors shrink-0"
+                      title="Hapus expense"
                     >
-                      <MoreVertical size={18} className="text-white/60" />
+                      <Trash2 size={18} className="text-white/60" />
                     </button>
-                  </div>
+                  </motion.div>
                 ))}
                 {expenses.length === 0 && (
-                  <p className="text-white/40 text-sm text-center py-8">No expenses recorded yet.</p>
+                  <p className="text-white/40 text-sm text-center py-8">Tidak ada pengeluaran</p>
                 )}
               </div>
             </div>
@@ -486,12 +777,12 @@ export default function AdminDashboard() {
                       onClick={() => handleDeleteIncome(income.id)}
                       className="p-2 hover:bg-red-500/20 rounded-lg transition-colors shrink-0"
                     >
-                      <MoreVertical size={18} className="text-white/60" />
+                      <Trash2 size={18} className="text-white/60" />
                     </button>
                   </div>
                 ))}
                 {incomes.length === 0 && (
-                  <p className="text-white/40 text-sm text-center py-8">No income recorded yet.</p>
+                  <p className="text-white/40 text-sm text-center py-8">Tidak ada pemasukan</p>
                 )}
               </div>
             </div>
@@ -516,6 +807,15 @@ export default function AdminDashboard() {
           <IncomeForm
             onClose={() => setShowIncomeForm(false)}
             onSubmit={handleAddIncome}
+          />
+        )}
+
+        {/* ── EXPENSE DETAIL MODAL ── */}
+        {selectedExpense && (
+          <ExpenseDetailModal
+            expense={selectedExpense}
+            onClose={() => setSelectedExpense(null)}
+            onUpdate={handleUpdateExpense}
           />
         )}
       </motion.div>

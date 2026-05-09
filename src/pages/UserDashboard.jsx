@@ -269,9 +269,9 @@ setUnpaidStudents(unpaid)
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {[
             { key: 'overview',  label: 'Overview'  },
-            { key: 'income',    label: 'Income'    },
-            { key: 'expenses',  label: 'Expenses'  },
-            { key: 'payments',  label: 'Payments'  },
+            { key: 'income',    label: 'Pemasukan'    },
+            { key: 'expenses',  label: 'Pengeluaran'  },
+            { key: 'payments',  label: 'Pembayaran'  },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -311,7 +311,7 @@ setUnpaidStudents(unpaid)
                 <DashboardCard
                   icon={TrendingUp}
                   title="Bank Mini"
-                  value={`Rp ${stats.miniBank.toLocaleString('id-ID')}`}
+                  value={`Rp ${stats.miniBank.toLocaleString('id-ID')}K`}
                   subtext="Uang yang berada di bank mini"
                   accentColor="from-green-500 to-emerald-500"
                 />
@@ -320,7 +320,7 @@ setUnpaidStudents(unpaid)
                 <DashboardCard
                   icon={TrendingDown}
                   title="Bendahara"
-                  value={`Rp ${stats.treasurer.toLocaleString('id-ID')}`}
+                  value={`Rp ${stats.treasurer.toLocaleString('id-ID')}K`}
                   subtext="Uang di bendahara"
                   accentColor="from-blue-500 to-cyan-500"
                 />
@@ -372,7 +372,7 @@ setUnpaidStudents(unpaid)
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-display font-bold text-white">Income</h2>
+                  <h2 className="text-2xl font-display font-bold text-white">Pemasukan</h2>
                   <p className="text-sm text-white/50 mt-0.5">
                     {incomes.length} transaksi •{' '}
                     <span className="text-green-400">
@@ -394,7 +394,7 @@ setUnpaidStudents(unpaid)
                 ) : incomes.length > 0 ? (
                   incomes.map((income) => <IncomeRow key={income.id} income={income} />)
                 ) : (
-                  <p className="text-white/40 text-sm text-center py-10">Belum ada data income.</p>
+                  <p className="text-white/40 text-sm text-center py-10">Belum ada data pemasukan.</p>
                 )}
               </div>
             </div>
@@ -408,7 +408,7 @@ setUnpaidStudents(unpaid)
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-display font-bold text-white">Expenses</h2>
+                  <h2 className="text-2xl font-display font-bold text-white">Pengeluaran</h2>
                   <p className="text-sm text-white/50 mt-0.5">
                     {expenses.length} transaksi •{' '}
                     <span className="text-accent">

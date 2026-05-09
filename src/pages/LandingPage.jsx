@@ -31,8 +31,8 @@ export default function LandingPage() {
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=1600&h=900&fit=crop)',
-          filter: 'brightness(0.4) blur(4px)',
+          backgroundImage: 'url(https://media.discordapp.net/attachments/1208321641831202866/1502656683552542871/IMG-20260421-WA0021.jpg?ex=6a008197&is=69ff3017&hm=b0590aea283645805541fe04cc20b92178c23c51d51be476d9799ba7b0c10f34&=&format=webp&width=721&height=960)',
+          filter: 'brightness(1) blur(2px)',
         }}
       />
 
@@ -62,7 +62,7 @@ export default function LandingPage() {
           variants={itemVariants}
           className="text-lg md:text-xl text-white/70 max-w-2xl mb-12 font-light"
         >
-          Manage your class cash flow efficiently. Track income, expenses, and student payments in one beautiful dashboard.
+          Sistem kas kelas yang dibuat untuk TKJ A Angkatan 29. Di kembangkan oleh Noval Hadi Purnomo
         </motion.p>
 
         {/* CTA Button */}
@@ -95,7 +95,7 @@ export default function LandingPage() {
           variants={itemVariants}
           className="absolute bottom-8 text-xs text-white/40"
         >
-          A modern financial management system for your class
+          Sebuah langkah modernisasi sistem dari buku ke media website
         </motion.p>
       </motion.div>
 
