@@ -5,7 +5,7 @@ export default function TransactionList({ transactions, isLoading }) {
   return (
     <div className="glass p-6 rounded-2xl">
       <h3 className="text-lg font-display font-bold text-white mb-6">
-        Transaksi Terakhir
+        Transaksi Terakhirre
       </h3>
 
       {isLoading ? (

@@ -25,6 +25,13 @@ const formatDate = (dateStr) => {
     day: '2-digit', month: 'short', year: 'numeric',
   })
 }
+const getCurrentMonthYear = () => {
+  const now = new Date()
+  return now.toLocaleDateString('id-ID', {
+    month: 'long',
+    year: 'numeric',
+  })
+}
 
 const formatDateDetailed = (dateStr) => {
   if (!dateStr) return '-'
@@ -742,12 +749,67 @@ export default function UserDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <motion.div variants={itemVariants} className="lg:col-span-2">
-                <TransactionList transactions={transactions} isLoading={isLoading} />
-              </motion.div>
+
+  {/* Pengeluaran terakhir */}
+  <motion.div variants={itemVariants}>
+    <div className="glass p-6 rounded-2xl h-full flex flex-col">
+      <h3 className="text-lg font-display font-bold text-white mb-4">
+        Pengeluaran Terakhir
+      </h3>
+
+      <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+        {expenses.slice(0, 5).map((expense) => (
+          <div
+            key={expense.id}
+            className="flex items-center justify-between p-3 rounded-lg bg-white/5"
+          >
+            <div>
+              <p className="text-white font-medium">{expense.name}</p>
+              <p className="text-xs text-white/50">{expense.category}</p>
+            </div>
+            <p className="text-accent font-bold">
+              -Rp {expense.amount.toLocaleString('id-ID')}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </motion.div>
+
+  {/* Pemasukan terakhir */}
+  <motion.div variants={itemVariants}>
+    <div className="glass p-6 rounded-2xl h-full flex flex-col">
+      <h3 className="text-lg font-display font-bold text-white mb-4">
+        Pemasukan Terakhir
+      </h3>
+
+      <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+        {incomes.slice(0, 5).map((income) => (
+          <div
+            key={income.id}
+            className="flex items-center justify-between p-3 rounded-lg bg-white/5"
+          >
+            <div>
+              <p className="text-white font-medium">{income.name}</p>
+              <p className="text-xs text-white/50">{income.source}</p>
+            </div>
+            <p className="text-green-500 font-bold">
+              +Rp {income.amount.toLocaleString('id-ID')}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </motion.div>
               <motion.div variants={itemVariants}>
                 <div className="glass p-6 rounded-2xl">
-                  <h3 className="text-lg font-display font-bold text-white mb-4">Yang belum bayar bulan ini</h3>
+                  <h3 className="text-lg font-display font-bold text-white mb-1">
+  Yang belum bayar
+</h3>
+
+<p className="text-xs text-white/40 mb-4">
+  Periode: {getCurrentMonthYear()}
+</p>
                   <div className="space-y-3 max-h-96 overflow-auto">
                     {unpaidStudents.length > 0 ? (
                       unpaidStudents.map((item, idx) => (
