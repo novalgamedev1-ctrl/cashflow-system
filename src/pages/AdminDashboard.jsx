@@ -13,8 +13,6 @@ import ExpenseForm from '../components/ExpenseForm'
 import IncomeForm from '../components/IncomeForm'
 import StudentPaymentManager from '../components/StudentPaymentManager'
 
-const POLL_INTERVAL = 10000 // 10 detik
-
 // ─── Helper ────────────────────────────────────────────────────────────────────
 const calcTotalCash = (incomes = [], expenses = []) =>
   incomes.reduce((s, r) => s + (r.amount ?? 0), 0) -
@@ -463,14 +461,13 @@ export default function AdminDashboard() {
   const [selectedExpense, setSelectedExpense]     = useState(null)
   const [selectedIncome, setSelectedIncome]       = useState(null)
   const [lastUpdated, setLastUpdated]             = useState(null)
-  const [isPolling, setIsPolling]                 = useState(false)
+
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchAdminData = useCallback(async (silent = false) => {
     try {
       if (!silent) setIsLoading(true)
-      else setIsPolling(true)
-
+      
       const [expenseRes, incomeRes, summaryRes] = await Promise.all([
         supabase.from('expenses').select('*').order('created_at', { ascending: false }),
         supabase.from('income').select('*').order('created_at', { ascending: false }),
@@ -490,7 +487,7 @@ export default function AdminDashboard() {
       console.error('Failed to fetch admin data:', err)
     } finally {
       setIsLoading(false)
-      setIsPolling(false)
+      
     }
   }, [])
 
@@ -499,13 +496,7 @@ export default function AdminDashboard() {
     fetchAdminData(false)
   }, [fetchAdminData])
 
-  // ── Polling ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchAdminData(true)
-    }, POLL_INTERVAL)
-    return () => clearInterval(interval)
-  }, [fetchAdminData])
+  
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const totalClassCash = calcTotalCash(incomes, expenses)
@@ -610,12 +601,35 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold text-white">Admin Panel</h1>
-            <p className="text-sm text-white/60">{user?.name || 'Admin'}</p>
+            <p className="text-sm text-white/60">by Nopal</p>
+                                            <motion.button
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  onClick={() => fetchAdminData(true)}
+  disabled={isLoading}
+  className="mt-2 group relative overflow-hidden px-3 py-2 rounded-xl glass border border-white/10 hover:border-accent/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {/* glow */}
+  <div className="absolute inset-0 bg-gradient-to-r from-accent/0 via-accent/10 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+  <div className="relative flex items-center gap-2">
+    <RefreshCw
+      size={16}
+      className={`text-accent transition-transform duration-500 ${
+        isLoading ? 'animate-spin' : 'group-hover:rotate-180'
+      }`}
+    />
+
+    <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
+      {isLoading ? 'Refreshing...' : 'Refresh'}
+    </span>
+  </div>
+</motion.button> 
           </div>
           <div className="flex items-center gap-3">
             {/* Live indicator */}
             <div className="flex items-center gap-2">
-              {isPolling ? (
+              {isLoading ? (
                 <RefreshCw size={13} className="text-accent animate-spin" />
               ) : (
                 <span className="relative flex h-2 w-2">
