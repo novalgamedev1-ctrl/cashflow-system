@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Wallet } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export default function LandingPage() {
@@ -49,7 +49,9 @@ export default function LandingPage() {
         {/* Logo/Header */}
         <motion.div variants={itemVariants} className="mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 mb-6 glass">
-            <div className="text-2xl font-display font-bold text-accent">TKJ</div>
+            <div className="p-2 rounded-xl bg-accent/10 border border-accent/20">
+  <Wallet className="w-7 h-7 text-accent" />
+</div>
           </div>
           <h1 className="text-5xl md:text-7xl font-display font-bold mb-4">
             <span className="text-gradient">CashFlow</span>

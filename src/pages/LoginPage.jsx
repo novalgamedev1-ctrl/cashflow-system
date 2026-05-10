@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { Wallet } from 'lucide-react'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -91,7 +92,9 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 mb-4 glass">
-              <div className="text-xl font-display font-bold text-accent">TKJ</div>
+                          <div className="p-2 rounded-xl bg-accent/10 border border-accent/20">
+  <Wallet className="w-7 h-7 text-accent" />
+</div>
             </div>
             <h1 className="text-3xl font-display font-bold text-white mb-2">
               CashFlow Login
