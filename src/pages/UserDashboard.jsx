@@ -33,6 +33,21 @@ const getCurrentMonthYear = () => {
   })
 }
 
+const monthNames = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+]
+
 const formatDateDetailed = (dateStr) => {
   if (!dateStr) return '-'
   const utcDate = new Date(dateStr)
@@ -545,6 +560,15 @@ export default function UserDashboard() {
   const [selectedIncome, setSelectedIncome]   = useState(null)
   const [selectedExpense, setSelectedExpense] = useState(null)
   const [lastUpdated, setLastUpdated]         = useState(null)
+  const currentDate = new Date()
+
+const [selectedMonth, setSelectedMonth] = useState(
+  currentDate.getMonth() + 1
+)
+
+const [selectedYear, setSelectedYear] = useState(
+  currentDate.getFullYear()
+) 
 
   // Simpan studentId di ref agar polling bisa akses tanpa re-create interval
   const studentIdRef = useRef(null)
@@ -583,8 +607,8 @@ export default function UserDashboard() {
         supabase.from('students').select('id, name'),
         supabase.from('payment_status')
           .select('student_id, paid')
-          .eq('month', new Date().getMonth() + 1)
-          .eq('year', new Date().getFullYear()),
+.eq('month', selectedMonth)
+.eq('year', selectedYear),
         supabase.from('income').select('*').order('created_at', { ascending: false }),
         supabase.from('expenses').select('*').order('created_at', { ascending: false }),
       ])
@@ -613,7 +637,7 @@ export default function UserDashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.student_id]) // studentName sengaja tidak jadi dep agar tidak re-create
+  }, [user?.student_id, selectedMonth, selectedYear])
 
   // ── Initial fetch ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -803,13 +827,34 @@ export default function UserDashboard() {
   </motion.div>
               <motion.div variants={itemVariants}>
                 <div className="glass p-6 rounded-2xl">
-                  <h3 className="text-lg font-display font-bold text-white mb-1">
-  Yang belum bayar
-</h3>
+                  <div className="flex items-center justify-between mb-4 gap-3">
 
-<p className="text-xs text-white/40 mb-4">
-  Periode: {getCurrentMonthYear()}
-</p>
+  <div>
+    <h3 className="text-lg font-display font-bold text-white">
+      Yang belum bayar
+    </h3>
+
+    <p className="text-xs text-white/40 mt-0.5">
+      {monthNames[selectedMonth - 1]} {selectedYear}
+    </p>
+  </div>
+
+  <select
+    value={selectedMonth}
+    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+    className="bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-accent"
+  >
+    {monthNames.map((month, index) => (
+      <option
+        key={index}
+        value={index + 1}
+        className="bg-dark-secondary"
+      >
+        {month}
+      </option>
+    ))}
+  </select>
+</div>
                   <div className="space-y-3 max-h-96 overflow-auto">
                     {unpaidStudents.length > 0 ? (
                       unpaidStudents.map((item, idx) => (

@@ -443,7 +443,20 @@ function StatCard({ icon: Icon, title, value, subtext, accentClass }) {
     </div>
   )
 }
-
+const monthNames = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+]
 // ─── Main Component ─────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -461,6 +474,18 @@ export default function AdminDashboard() {
   const [selectedExpense, setSelectedExpense]     = useState(null)
   const [selectedIncome, setSelectedIncome]       = useState(null)
   const [lastUpdated, setLastUpdated]             = useState(null)
+  const currentDate = new Date()
+
+const [selectedMonth, setSelectedMonth] = useState(
+  currentDate.getMonth() + 1
+)
+
+const [selectedYear, setSelectedYear] = useState(
+  currentDate.getFullYear()
+)
+
+const [unpaidStudents, setUnpaidStudents] = useState([])
+  
 
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -468,14 +493,43 @@ export default function AdminDashboard() {
     try {
       if (!silent) setIsLoading(true)
       
-      const [expenseRes, incomeRes, summaryRes] = await Promise.all([
-        supabase.from('expenses').select('*').order('created_at', { ascending: false }),
-        supabase.from('income').select('*').order('created_at', { ascending: false }),
-        supabase.from('financial_summary').select('*').limit(1).maybeSingle(),
-      ])
+const [
+  expenseRes,
+  incomeRes,
+  summaryRes,
+  studentsRes,
+  monthlyPaymentsRes,
+] = await Promise.all([
+  supabase.from('expenses').select('*').order('created_at', { ascending: false }),
+
+  supabase.from('income').select('*').order('created_at', { ascending: false }),
+
+  supabase.from('financial_summary').select('*').limit(1).maybeSingle(),
+
+  supabase.from('students').select('id, name'),
+
+  supabase
+    .from('payment_status')
+    .select('student_id, paid')
+    .eq('month', selectedMonth)
+    .eq('year', selectedYear),
+])
 
       setExpenses(expenseRes.data || [])
       setIncomes(incomeRes.data  || [])
+
+      const allStudents = studentsRes.data || []
+const monthlyPayments = monthlyPaymentsRes.data || []
+
+setUnpaidStudents(
+  allStudents.filter((student) => {
+    const payment = monthlyPayments.find(
+      (p) => p.student_id === student.id
+    )
+
+    return !payment || payment.paid === false
+  })
+)
 
       if (summaryRes.data) {
         setFinancialSummary({ mini_bank: summaryRes.data.mini_bank ?? 0, treasurer: summaryRes.data.treasurer ?? 0 })
@@ -489,7 +543,7 @@ export default function AdminDashboard() {
       setIsLoading(false)
       
     }
-  }, [])
+}, [selectedMonth, selectedYear])
 
   // ── Initial fetch ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -709,7 +763,7 @@ export default function AdminDashboard() {
               </motion.button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="glass p-6 rounded-2xl">
                 <h3 className="text-lg font-display font-bold text-white mb-4">Pengeluaran Terakhir</h3>
                 <div className="space-y-3 max-h-96 overflow-auto">
@@ -740,6 +794,60 @@ export default function AdminDashboard() {
                   {incomes.length === 0 && <p className="text-white/30 text-sm text-center py-4">Belum ada data.</p>}
                 </div>
               </div>
+
+              <div className="glass p-6 rounded-2xl">
+  <div className="flex items-center justify-between mb-4 gap-3">
+
+    <div>
+      <h3 className="text-lg font-display font-bold text-white">
+        Yang belum bayar
+      </h3>
+
+      <p className="text-xs text-white/40 mt-0.5">
+        {monthNames[selectedMonth - 1]} {selectedYear}
+      </p>
+    </div>
+
+    <select
+      value={selectedMonth}
+      onChange={(e) => setSelectedMonth(Number(e.target.value))}
+      className="bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-accent"
+    >
+      {monthNames.map((month, index) => (
+        <option
+          key={index}
+          value={index + 1}
+          className="bg-dark-secondary"
+        >
+          {month}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  <div className="space-y-3 max-h-96 overflow-auto">
+    {unpaidStudents.length > 0 ? (
+      unpaidStudents.map((student) => (
+        <div
+          key={student.id}
+          className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <span className="text-white text-sm">
+            {student.name}
+          </span>
+
+          <span className="px-2.5 py-1 bg-red-500/20 border border-red-500/40 text-red-300 text-xs rounded-full">
+            ❌ Unpaid
+          </span>
+        </div>
+      ))
+    ) : (
+      <p className="text-white/40 text-sm text-center py-6">
+        Semua siswa sudah bayar ✅
+      </p>
+    )}
+  </div>
+</div>
             </div>
           </motion.div>
         )}
