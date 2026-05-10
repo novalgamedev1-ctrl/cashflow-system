@@ -51,34 +51,89 @@ function NotificationCard({ studentId }) {
 
   const syncStatus = useCallback(async () => {
     const perm = getNotificationPermission()
-    if (perm === 'unsupported') { setStatus('unsupported'); return }
-    if (perm === 'denied')      { setStatus('denied'); return }
+
+    if (perm === 'unsupported') {
+      setStatus('unsupported')
+      return
+    }
+
+    if (perm === 'denied') {
+      setStatus('denied')
+      return
+    }
+
     if (perm === 'granted') {
       const sub = await isSubscribed()
       setStatus(sub ? 'granted' : 'default')
       return
     }
+
     setStatus('default')
   }, [])
 
-  useEffect(() => { syncStatus() }, [syncStatus])
+  useEffect(() => {
+    syncStatus()
+  }, [syncStatus])
 
+  // ── Enable Notification ─────────────────────────────────────
   const handleEnable = async () => {
     if (!studentId) return
-    if (Notification.permission === 'denied') {
-      alert('Notifikasi diblokir.\n\nBuka pengaturan browser lalu izinkan notifikasi untuk website ini.')
-      return
-    }
+
     setStatus('loading')
+
     try {
+      // Browser modern tidak bisa munculkan popup lagi kalau denied
+      if (Notification.permission === 'denied') {
+        alert(
+          'Notifikasi diblokir.\n\nSilakan klik icon gembok di browser lalu izinkan notifikasi untuk website ini.'
+        )
+
+        setStatus('denied')
+        return
+      }
+const permission = await Notification.requestPermission()
+
+if (permission !== 'granted') {
+  setStatus('denied')
+  return
+}
+
+await subscribeToPush(studentId)
       await subscribeToPush(studentId)
+
       setStatus('granted')
     } catch (err) {
       console.error(err)
-      setStatus(Notification.permission === 'denied' ? 'denied' : 'default')
+
+      if (Notification.permission === 'denied') {
+        setStatus('denied')
+      } else {
+        setStatus('default')
+      }
     }
   }
 
+  // ── Disable Notification ────────────────────────────────────
+  const unsubscribePush = async () => {
+    try {
+      setStatus('loading')
+
+      const registration = await navigator.serviceWorker.ready
+      const subscription =
+        await registration.pushManager.getSubscription()
+
+      if (subscription) {
+        await subscription.unsubscribe()
+      }
+
+      setStatus('default')
+    } catch (err) {
+      console.error('Failed to unsubscribe:', err)
+      setStatus('granted')
+    }
+  }
+
+  // ── Derived state ───────────────────────────────────────────
   const isGranted     = status === 'granted'
   const isDenied      = status === 'denied'
   const isLoading     = status === 'loading'
@@ -86,47 +141,150 @@ function NotificationCard({ studentId }) {
 
   return (
     <div className="glass p-6 rounded-2xl relative overflow-hidden">
-      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r transition-all duration-500
-        ${isGranted ? 'from-green-400 to-emerald-500' : isDenied ? 'from-red-400 to-rose-500' : 'from-white/20 to-white/10'}`} />
+
+      {/* Top Accent */}
+      <div
+        className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r transition-all duration-500
+          ${
+            isGranted
+              ? 'from-green-400 to-emerald-500'
+              : isDenied
+                ? 'from-red-400 to-rose-500'
+                : 'from-white/20 to-white/10'
+          }`}
+      />
+
       <div className="flex items-center justify-between">
+
+        {/* Left */}
         <div className="flex items-center gap-4">
-          <div className={`relative p-3 rounded-xl transition-colors duration-300
-            ${isGranted ? 'bg-green-500/15' : isDenied ? 'bg-red-500/15' : 'bg-white/10'}`}>
-            {isLoading ? <Loader2 size={22} className="text-white/60 animate-spin" />
-              : isGranted ? <BellRing size={22} className="text-green-400" />
-              : isDenied  ? <BellOff  size={22} className="text-red-400" />
-              : <Bell size={22} className="text-white/60" />}
+
+          {/* Icon */}
+          <div
+            className={`relative p-3 rounded-xl transition-colors duration-300
+              ${
+                isGranted
+                  ? 'bg-green-500/15'
+                  : isDenied
+                    ? 'bg-red-500/15'
+                    : 'bg-white/10'
+              }`}
+          >
+            {isLoading ? (
+              <Loader2
+                size={22}
+                className="text-white/60 animate-spin"
+              />
+            ) : isGranted ? (
+              <BellRing
+                size={22}
+                className="text-green-400"
+              />
+            ) : isDenied ? (
+              <BellOff
+                size={22}
+                className="text-red-400"
+              />
+            ) : (
+              <Bell
+                size={22}
+                className="text-white/60"
+              />
+            )}
           </div>
+
+          {/* Text */}
           <div>
-            <p className="text-white font-semibold text-sm">Notifikasi</p>
-            <p className={`text-xs mt-0.5 transition-colors duration-300
-              ${isGranted ? 'text-green-400' : isDenied ? 'text-red-400' : 'text-white/40'}`}>
-              {isLoading      ? 'Memproses...'
-               : isGranted    ? 'Aktif - kamu akan menerima notifikasi'
-               : isDenied     ? 'Ditolak - ubah di pengaturan browser'
-               : isUnsupported? 'Browser tidak mendukung notifikasi'
-               : 'Belum diaktifkan'}
+            <p className="text-white font-semibold text-sm">
+              Notifikasi
+            </p>
+
+            <p
+              className={`text-xs mt-0.5 transition-colors duration-300
+                ${
+                  isGranted
+                    ? 'text-green-400'
+                    : isDenied
+                      ? 'text-red-400'
+                      : 'text-white/40'
+                }`}
+            >
+              {isLoading
+                ? 'Memproses...'
+                : isGranted
+                  ? 'Aktif - kamu akan menerima notifikasi'
+                  : isDenied
+                    ? 'Diblokir browser'
+                    : isUnsupported
+                      ? 'Browser tidak mendukung notifikasi'
+                      : 'Belum diaktifkan'}
             </p>
           </div>
         </div>
+
+        {/* Right */}
         <div className="flex items-center gap-3 shrink-0">
-          <motion.div key={status} initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14 }}>
-            {isGranted ? <CheckCircle2 size={22} className="text-green-400 drop-shadow-[0_0_6px_rgba(74,222,128,0.6)]" />
-              : isDenied ? <XCircle size={22} className="text-red-400 drop-shadow-[0_0_6px_rgba(248,113,113,0.6)]" /> : null}
+
+          {/* Status Icon */}
+          <motion.div
+            key={status}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 14 }}
+          >
+            {isGranted ? (
+              <CheckCircle2
+                size={22}
+                className="text-green-400 drop-shadow-[0_0_6px_rgba(74,222,128,0.6)]"
+              />
+            ) : isDenied ? (
+              <XCircle
+                size={22}
+                className="text-red-400 drop-shadow-[0_0_6px_rgba(248,113,113,0.6)]"
+              />
+            ) : null}
           </motion.div>
-          {!isUnsupported && !isGranted && (
-            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handleEnable}
-              disabled={isLoading || isDenied}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30">
-              {isLoading ? '...' : 'Aktifkan'}
+
+          {/* Action Button */}
+          {!isUnsupported && (
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={
+                isGranted
+                  ? unsubscribePush
+                  : handleEnable
+              }
+              disabled={isLoading}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
+                ${
+                  isGranted
+                    ? 'bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30'
+                    : 'bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30'
+                }`}
+            >
+              {isLoading
+                ? '...'
+                : isGranted
+                  ? 'Nonaktifkan'
+                  : isDenied
+                    ? 'Izinkan Lagi'
+                    : 'Aktifkan'}
             </motion.button>
           )}
         </div>
       </div>
+
+      {/* Helper */}
       {isDenied && (
-        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-          className="mt-3 text-xs text-white/30 leading-relaxed">
-          Browser memblokir notifikasi. Buka <strong>Pengaturan → Privasi → Notifikasi</strong> dan izinkan situs ini, lalu muat ulang halaman.
+        <motion.p
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="mt-3 text-xs text-white/30 leading-relaxed"
+        >
+          Browser memblokir notifikasi.
+          Buka <strong>Pengaturan → Privasi → Notifikasi</strong>
+          lalu izinkan website ini dan refresh halaman.
         </motion.p>
       )}
     </div>
