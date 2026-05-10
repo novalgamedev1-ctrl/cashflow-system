@@ -731,12 +731,12 @@ export default function UserDashboard() {
               </motion.div>
               <motion.div variants={itemVariants}>
                 <DashboardCard icon={TrendingUp} title="Bank Mini"
-                  value={`Rp ${stats.miniBank.toLocaleString('id-ID')}K`}
+                  value={`Rp ${stats.miniBank.toLocaleString('id-ID')}`}
                   subtext="Uang yang berada di bank mini" accentColor="from-green-500 to-emerald-500" />
               </motion.div>
               <motion.div variants={itemVariants}>
                 <DashboardCard icon={TrendingDown} title="Bendahara"
-                  value={`Rp ${stats.treasurer.toLocaleString('id-ID')}K`}
+                  value={`Rp ${stats.treasurer.toLocaleString('id-ID')}`}
                   subtext="Uang di bendahara" accentColor="from-blue-500 to-cyan-500" />
               </motion.div>
             </div>
