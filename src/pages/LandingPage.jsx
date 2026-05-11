@@ -31,7 +31,7 @@ export default function LandingPage() {
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: 'url(https://media.discordapp.net/attachments/1208321641831202866/1502656683552542871/IMG-20260421-WA0021.jpg?ex=6a008197&is=69ff3017&hm=b0590aea283645805541fe04cc20b92178c23c51d51be476d9799ba7b0c10f34&=&format=webp&width=721&height=960)',
+          backgroundImage: 'url(https://fxxjfkcjtuuxbrxhfrph.supabase.co/storage/v1/object/public/expense-proofs/IMG-20260421-WA0021.webp)',
           filter: 'brightness(0.8) blur(1.5px)',
         }}
       />
